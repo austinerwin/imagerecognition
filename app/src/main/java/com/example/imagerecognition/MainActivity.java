@@ -8,8 +8,17 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 
+import com.example.imagerecognition.Helper.InternetCheck;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.ml.vision.FirebaseVision;
+import com.google.firebase.ml.vision.cloud.FirebaseVisionCloudDetectorOptions;
+import com.google.firebase.ml.vision.common.FirebaseVisionImage;
+import com.google.firebase.ml.vision.label.FirebaseVisionImageLabel;
+import com.google.firebase.ml.vision.label.FirebaseVisionImageLabeler;
+import com.google.firebase.ml.vision.label.FirebaseVisionOnDeviceImageLabelerOptions;
+
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -24,11 +33,13 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -61,7 +72,40 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+    }
 
+    private void detectObjects(Bitmap bitmap) {
+        FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
+
+        FirebaseVisionOnDeviceImageLabelerOptions options = new FirebaseVisionOnDeviceImageLabelerOptions
+                .Builder()
+                .setConfidenceThreshold(0.8f)
+                .build();
+        FirebaseVisionImageLabeler detector = FirebaseVision.getInstance().getCloudImageLabeler();
+
+        detector.processImage(image).addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionImageLabel>>() {
+            @Override
+            public void onSuccess(List<FirebaseVisionImageLabel> firebaseVisionLabels) {
+                processDataResult(firebaseVisionLabels);
+            }
+        });
+
+        /*new InternetCheck(new InternetCheck.Consumer() {
+            @Override
+            public void accept(boolean internet) {
+                if(internet) {
+                    FirebaseVisionCloudDetectorOptions options = new FirebaseVisionCloudDetectorOptions().builder().setMaxResults(1);
+                }
+            }
+        });*/
+
+
+    }
+
+    private void processDataResult(List<FirebaseVisionImageLabel> firebaseVisionLabels) {
+        for (FirebaseVisionImageLabel label : firebaseVisionLabels) {
+            Toast.makeText(this, "Result: " + label.getText(), Toast.LENGTH_SHORT).show();
+        }
 
 
     }
@@ -85,26 +129,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /*private File getFile() {
-        File folder = Environment.getExternalStoragePublicDirectory("/From_camera/imagens");
-
-        if(!folder.exists())
-        {folder.mkdir();}
-
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_"+ timeStamp + "_";
-        File image_file = null;
-
-        try {
-            image_file = File.createTempFile(imageFileName,".jpg",folder);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        currentPhotoPath = image_file.getAbsolutePath();
-        return image_file;
-    }
-*/
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
